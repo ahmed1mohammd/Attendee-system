@@ -4,59 +4,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>نظام إدارة الطلاب</title>
+    <title>نظام إدارة الطلاب الذكي</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Bootstrap CSS for specific components -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
       :root {
-        --main-color-gradient: linear-gradient(to left, #000000, #666666 70%);
-        --white-color: #fff;
-        --black-color: #000;
-        --main-color: #16423C;
-        --second-color: #6A9C89;
-        --third-color: #E9EFEC;
-        --four-color: #C4DAD2;
+        /* الألوان الأساسية للوضع الفاتح */
+        --main-l: #16423C;
+        --second-l: #6A9C89;
+        
+        /* الألوان الجديدة للوضع الداكن (طلب المستخدم) */
+        --main-d: #0f766e;      /* أخضر أساسي */
+        --second-d: #22c55e;    /* أخضر فاتح */
+        --bg-d: #000000;        /* خلفية سوداء */
+        --card-d: #061c17;      /* كروت داكنة */
+        --text-d: #e6fff6;      /* نصوص مبيضة مخضرة */
+        --gradient-d: linear-gradient(to left, #000000, #0f2f27 70%);
       }
       
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: var(--third-color);
-        transition: background-color 0.3s ease;
+        margin: 0;
+        transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
+      /* السكرول بار */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #0f766e; border-radius: 10px; }
+      
       .dark body {
-        background-color: #121212;
-        color: #e5e7eb;
+        background: var(--bg-d) !important;
+        background-image: var(--gradient-d) !important;
+        background-attachment: fixed !important;
+        color: var(--text-d) !important;
+      }
+
+      .dark .card {
+        background-color: var(--card-d) !important;
+        border: 1px solid rgba(34, 197, 94, 0.1) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
       }
 
       .sidebar-transition {
-        transition: width 0.3s ease-in-out;
-      }
-
-      /* Custom styles to bridge Tailwind and Bootstrap */
-      .card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
-      .dark .card {
-        background-color: #1e1e1e;
-        color: #fff;
-        border: 1px solid #333;
+      .card {
+        border-radius: 28px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
       }
 
-      .main-btn {
-        background-color: var(--main-color);
-        color: white;
-      }
-      .main-btn:hover {
-        background-color: var(--second-color);
-        color: white;
+      @media print {
+        .no-print { display: none !important; }
       }
     </style>
     <script>
@@ -67,26 +72,30 @@
             colors: {
               main: '#16423C',
               second: '#6A9C89',
-              third: '#E9EFEC',
-              fourth: '#C4DAD2',
+              // ألوان الدارك مود الجديدة المطلوبة
+              darkMain: '#0f766e',
+              darkSecond: '#22c55e',
+              darkBg: '#000000',
+              darkCard: '#061c17',
+              darkText: '#e6fff6',
             }
           }
         }
       }
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0"
-  }
-}
-</script>
-</head>
-  <body>
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+        "recharts": "https://esm.sh/recharts@^3.6.0"
+      }
+    }
+    </script>
+  </head>
+  <body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-darkText">
     <div id="root"></div>
   </body>
 </html>

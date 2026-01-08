@@ -5,41 +5,31 @@ export interface Student {
   phone: string;
   groupId: string;
   qrCode: string;
+  isPaid: boolean;
+  attendanceCount: number;
 }
 
 export interface Group {
   id: string;
   name: string;
-  schedule: string[]; // e.g., ["الأحد", "الثلاثاء"]
-  lecturePrice: number;
-}
-
-export interface Attendance {
-  id: string;
-  studentId: string;
-  groupId: string;
-  date: string;
-  status: 'present' | 'absent';
+  days: string[];
+  time: string;
+  price: number;
+  studentCount: number;
 }
 
 export interface Exam {
   id: string;
   name: string;
   groupId: string;
+  date: string;
   maxScore: number;
 }
 
-export interface ExamResult {
+export interface Transaction {
   id: string;
-  examId: string;
-  studentId: string;
-  score: number;
-}
-
-export interface Payment {
-  id: string;
-  studentId: string;
+  studentName: string;
   amount: number;
   date: string;
-  description: string;
+  groupName: string;
 }
