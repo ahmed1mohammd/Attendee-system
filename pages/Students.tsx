@@ -1,112 +1,101 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ApiClient } from '../services/apiClient';
 import { Student, Group } from '../types';
 
-interface StudentsProps {
-  students: Student[];
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
-  groups: Group[];
-}
+const Students: React.FC = () => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState<Partial<Student>>({ name: '', phone: '', groupId: '' });
 
-const Students: React.FC<StudentsProps> = ({ students, setStudents, groups }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newStudent, setNewStudent] = useState({ name: '', phone: '', groupId: '' });
-
-  const filteredStudents = students.filter(s => 
-    s.name.includes(searchTerm) || s.phone.includes(searchTerm) || s.id.includes(searchTerm)
-  );
-
-  const handleAddStudent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStudent.name || !newStudent.phone || !newStudent.groupId) return alert('برجاء ملء كافة البيانات');
-    
-    const student: Student = {
-      id: 's' + (students.length + 1 + Date.now().toString().slice(-3)),
-      name: newStudent.name,
-      phone: newStudent.phone,
-      groupId: newStudent.groupId,
-      qrCode: 'QR-' + Math.random().toString(36).substr(2, 5).toUpperCase(),
-      isPaid: false,
-      attendanceCount: 0
-    };
-
-    setStudents([student, ...students]);
-    setShowAddModal(false);
-    setNewStudent({ name: '', phone: '', groupId: '' });
-  };
-
-  const deleteStudent = (id: string) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الطالب؟')) {
-      setStudents(students.filter(s => s.id !== id));
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [sData, gData] = await Promise.all([
+        ApiClient.get<Student[]>('/students'),
+        ApiClient.get<Group[]>('/groups')
+      ]);
+      setStudents(sData);
+      setGroups(gData);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => { fetchData(); }, []);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (form.id) await ApiClient.put(`/students/${form.id}`, form);
+      else await ApiClient.post('/students', form);
+      setShowModal(false);
+      fetchData();
+    } catch (err: any) { alert(err.message); }
+  };
+
+  const del = async (id: string) => {
+    if (!confirm('هل أنت متأكد من حذف الطالب؟')) return;
+    try {
+      await ApiClient.delete(`/students/${id}`);
+      fetchData();
+    } catch (err: any) { alert(err.message); }
+  };
+
+  const filtered = students.filter(s => s.name.includes(search) || s.phone.includes(search));
+
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold border-r-4 border-main pr-4">إدارة شؤون الطلاب</h2>
-        <div className="flex gap-2 w-full sm:w-auto">
-           <div className="relative flex-1 sm:w-64">
-              <input 
-                type="text" 
-                placeholder="بحث بالاسم أو الرقم..." 
-                className="w-full bg-white dark:bg-zinc-900 pl-10 pr-4 py-2.5 rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-main outline-none transition-all" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-           </div>
-           <button 
-            onClick={() => setShowAddModal(true)}
-            className="bg-main text-white px-6 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap shadow-lg shadow-main/20 hover:scale-105 transition-transform font-bold"
-           >
-              <i className="fa-solid fa-user-plus"></i>
-              إضافة طالب جديد
-           </button>
+    <div className="space-y-10 animate-fadeIn">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+        <h2 className="text-3xl font-black text-black dark:text-white">إدارة الطلاب</h2>
+        <div className="flex gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:w-96">
+            <input 
+              type="text" placeholder="بحث بالاسم أو رقم الهاتف..." 
+              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 pr-12 rounded-3xl outline-none font-bold text-sm shadow-sm"
+              value={search} onChange={e => setSearch(e.target.value)}
+            />
+            <i className="fa-solid fa-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          </div>
+          <button onClick={() => { setForm({ name: '', phone: '', groupId: '' }); setShowModal(true); }} className="bg-brand text-black px-8 py-4 rounded-3xl font-black shadow-lg hover:bg-black hover:text-brand transition-all flex items-center gap-2">
+            <i className="fa-solid fa-user-plus"></i> إضافة طالب
+          </button>
         </div>
       </div>
 
-      <div className="card p-0 bg-white dark:bg-zinc-900 border-0 shadow-2xl overflow-hidden rounded-[30px]">
+      <div className="card overflow-hidden rounded-[48px] border-gray-100 dark:border-zinc-900 bg-white dark:bg-black shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
+          <table className="w-full text-right">
             <thead>
-              <tr className="bg-gray-50 dark:bg-zinc-800/50 text-gray-500 dark:text-gray-400">
-                <th className="py-5 px-6 font-bold text-sm uppercase">كود الطالب</th>
-                <th className="py-5 px-6 font-bold text-sm uppercase">الاسم بالكامل</th>
-                <th className="py-5 px-6 font-bold text-sm uppercase">المجموعة</th>
-                <th className="py-5 px-6 font-bold text-sm uppercase">رقم التواصل</th>
-                <th className="py-5 px-6 font-bold text-sm uppercase">الحالة المالية</th>
-                <th className="py-5 px-6 font-bold text-sm text-center uppercase">الإجراءات</th>
+              <tr className="bg-gray-50 dark:bg-zinc-900 text-gray-500 font-black text-[10px] uppercase tracking-widest border-b border-gray-100 dark:border-zinc-800">
+                <th className="p-8">الطالب</th>
+                <th className="p-8">المجموعة</th>
+                <th className="p-8">الهاتف</th>
+                <th className="p-8 text-center">إجراءات</th>
               </tr>
             </thead>
-            <tbody className="divide-y dark:divide-zinc-800">
-              {filteredStudents.map(student => (
-                <tr key={student.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors group">
-                  <td className="py-5 px-6 font-mono text-main dark:text-second font-black text-sm">{student.id}</td>
-                  <td className="py-5 px-6">
-                    <div className="font-bold text-gray-800 dark:text-gray-200">{student.name}</div>
-                    <div className="text-[10px] text-gray-400 font-mono">{student.qrCode}</div>
+            <tbody className="divide-y divide-gray-50 dark:divide-zinc-900">
+              {loading ? (
+                <tr><td colSpan={4} className="p-20 text-center"><i className="fa-solid fa-spinner animate-spin text-brand text-2xl"></i></td></tr>
+              ) : filtered.map(s => (
+                <tr key={s.id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-900/40 transition-colors group">
+                  <td className="p-8">
+                    <p className="font-black text-black dark:text-white text-lg">{s.name}</p>
+                    <p className="text-[10px] text-gray-400 font-mono">{s.qrCode}</p>
                   </td>
-                  <td className="py-5 px-6">
-                     <span className="px-3 py-1 bg-main/5 text-main dark:text-fourth dark:bg-main/20 rounded-lg text-xs font-black">
-                        {groups.find(g => g.id === student.groupId)?.name || 'غير محدد'}
-                     </span>
-                  </td>
-                  <td className="py-5 px-6 text-sm font-semibold text-gray-600 dark:text-gray-400">{student.phone}</td>
-                  <td className="py-5 px-6">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${student.isPaid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {student.isPaid ? 'خالص' : 'متبقي'}
+                  <td className="p-8">
+                    <span className="bg-brand/10 text-brand px-4 py-2 rounded-xl text-[10px] font-black uppercase">
+                      {groups.find(g => g.id === s.groupId)?.name || 'عام'}
                     </span>
                   </td>
-                  <td className="py-5 px-6">
-                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="w-9 h-9 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-500 hover:text-white">
-                        <i className="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button onClick={() => deleteStudent(student.id)} className="w-9 h-9 bg-red-50 dark:bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center transition-colors hover:bg-red-500 hover:text-white">
-                        <i className="fa-solid fa-trash-can"></i>
-                      </button>
+                  <td className="p-8 text-gray-500 font-mono font-bold">{s.phone}</td>
+                  <td className="p-8 text-center">
+                    <div className="flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => { setForm(s); setShowModal(true); }} className="w-10 h-10 bg-gray-100 dark:bg-zinc-800 rounded-xl hover:text-brand"><i className="fa-solid fa-pen"></i></button>
+                      <button onClick={() => del(s.id)} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white"><i className="fa-solid fa-trash"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -116,70 +105,23 @@ const Students: React.FC<StudentsProps> = ({ students, setStudents, groups }) =>
         </div>
       </div>
 
-      {/* Add Student Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] p-10 shadow-2xl animate-scaleIn border dark:border-zinc-800">
-             <div className="flex justify-between items-center mb-8">
-                <h3 className="text-3xl font-black text-main dark:text-white">تسجيل طالب جديد</h3>
-                <button onClick={() => setShowAddModal(false)} className="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-zinc-800 text-gray-400 hover:text-red-500 transition-colors">
-                   <i className="fa-solid fa-times"></i>
-                </button>
-             </div>
-             
-             <form onSubmit={handleAddStudent} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold pr-2 flex items-center gap-2">
-                    <i className="fa-solid fa-user text-main"></i> اسم الطالب
-                  </label>
-                  <input 
-                    type="text" 
-                    required
-                    className="w-full bg-gray-50 dark:bg-zinc-800 border-0 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-main/10 transition-all"
-                    placeholder="الاسم الثلاثي..."
-                    value={newStudent.name}
-                    onChange={e => setNewStudent({...newStudent, name: e.target.value})}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold pr-2 flex items-center gap-2">
-                    <i className="fa-solid fa-phone text-main"></i> رقم الموبايل
-                  </label>
-                  <input 
-                    type="tel" 
-                    required
-                    className="w-full bg-gray-50 dark:bg-zinc-800 border-0 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-main/10 transition-all text-center font-bold"
-                    placeholder="01xxxxxxxxx"
-                    value={newStudent.phone}
-                    onChange={e => setNewStudent({...newStudent, phone: e.target.value})}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold pr-2 flex items-center gap-2">
-                    <i className="fa-solid fa-users-rectangle text-main"></i> تخصيص المجموعة
-                  </label>
-                  <select 
-                    required
-                    className="w-full bg-gray-50 dark:bg-zinc-800 border-0 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-main/10 transition-all font-bold appearance-none"
-                    value={newStudent.groupId}
-                    onChange={e => setNewStudent({...newStudent, groupId: e.target.value})}
-                  >
-                    <option value="">اختر المجموعة...</option>
-                    {groups.map(g => (
-                      <option key={g.id} value={g.id}>{g.name} ({g.time})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex gap-4 pt-6">
-                   <button type="submit" className="flex-1 bg-main text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-main/20 hover:scale-[1.02] active:scale-95 transition-all">
-                      حفظ وتسجيل الطالب
-                   </button>
-                </div>
-             </form>
-          </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+          <form onSubmit={save} className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[48px] p-12 space-y-6">
+            <h3 className="text-2xl font-black">بيانات الطالب</h3>
+            <div className="space-y-4">
+              <input type="text" placeholder="الاسم بالكامل" required className="w-full bg-gray-50 dark:bg-zinc-800 p-5 rounded-2xl font-bold" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+              <input type="tel" placeholder="رقم الموبايل" required className="w-full bg-gray-50 dark:bg-zinc-800 p-5 rounded-2xl font-bold" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+              <select required className="w-full bg-gray-50 dark:bg-zinc-800 p-5 rounded-2xl font-bold outline-none" value={form.groupId} onChange={e => setForm({...form, groupId: e.target.value})}>
+                <option value="">اختر المجموعة...</option>
+                {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-4 pt-6">
+              <button type="submit" className="flex-1 bg-brand text-black py-5 rounded-3xl font-black">حفظ</button>
+              <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-black py-5 rounded-3xl font-bold">إلغاء</button>
+            </div>
+          </form>
         </div>
       )}
     </div>

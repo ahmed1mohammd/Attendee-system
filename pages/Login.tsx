@@ -1,117 +1,77 @@
 
 import React, { useState } from 'react';
+import { User } from '../types';
+import { ApiClient } from '../services/apiClient';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: User, token: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await ApiClient.post<{ user: User; token: string }>('/auth/login', { username, password });
+      onLogin(response.user, response.token);
+    } catch (err: any) {
+      setError(err.message || 'فشل تسجيل الدخول');
+    } finally {
       setLoading(false);
-      onLogin();
-    }, 1000);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Visual Section */}
-      <div className="hidden md:flex flex-1 bg-main items-center justify-center p-12 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-second/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-second/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
-        
-        <div className="relative z-10 text-center max-w-md">
-           <img src="https://ro-s.net/img/logo.png" alt="Logo" className="h-32 mx-auto mb-8 drop-shadow-2xl" />
-           <h1 className="text-4xl font-bold mb-6">نظام إدارة الطلاب الذكي</h1>
-           <p className="text-xl opacity-80 font-light leading-relaxed">
-             أفضل منصة لإدارة المجموعات التعليمية، تتبع الحضور، والمدفوعات المالية بكل سهولة ودقة.
-           </p>
-           
-           <div className="mt-12 grid grid-cols-2 gap-4">
-              <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                 <i className="fa-solid fa-bolt text-2xl mb-2"></i>
-                 <p className="text-sm">سريع وموثوق</p>
-              </div>
-              <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
-                 <i className="fa-solid fa-lock text-2xl mb-2"></i>
-                 <p className="text-sm">بيانات مشفرة</p>
-              </div>
-           </div>
+    <div className="min-h-screen bg-black flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-black to-black font-['Cairo']">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-10 animate-fadeIn">
+          <div className="w-24 h-24 bg-brand rounded-[40px] flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-brand/20">
+            <i className="fa-solid fa-bolt-lightning text-black text-4xl"></i>
+          </div>
+          <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">Control Panel</h1>
+          <p className="text-zinc-500 font-bold mt-2 text-[10px] uppercase tracking-[0.4em]">Student Management System</p>
         </div>
-      </div>
 
-      {/* Form Section */}
-      <div className="flex-1 bg-white flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="md:hidden text-center mb-10">
-            <img src="https://ro-s.net/img/logo.png" alt="Logo" className="h-20 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-main">تسجيل الدخول للنظام</h2>
+        <form onSubmit={handleSubmit} className="bg-zinc-900 p-10 rounded-[48px] border border-zinc-800 space-y-6 shadow-2xl">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block px-2">Username</label>
+            <input 
+              type="text" 
+              required
+              className="w-full bg-black border border-zinc-800 p-5 rounded-3xl outline-none focus:border-brand font-bold text-white transition-all text-center"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+            />
           </div>
 
-          <div className="mb-10 hidden md:block">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">مرحباً بك مجدداً!</h2>
-            <p className="text-gray-500">من فضلك ادخل بيانات الاعتماد الخاصة بك للوصول</p>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block px-2">Password</label>
+            <input 
+              type="password" 
+              required
+              className="w-full bg-black border border-zinc-800 p-5 rounded-3xl outline-none focus:border-brand font-bold text-white transition-all text-center"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                 <i className="fa-solid fa-envelope text-main"></i>
-                 البريد الإلكتروني
-              </label>
-              <input 
-                type="email" 
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-main focus:ring-4 focus:ring-main/10 outline-none transition-all"
-                placeholder="admin@school.com"
-              />
-            </div>
+          {error && <p className="text-red-500 text-[11px] font-black text-center animate-pulse">{error}</p>}
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                 <i className="fa-solid fa-key text-main"></i>
-                 كلمة المرور
-              </label>
-              <input 
-                type="password" 
-                required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-main focus:ring-4 focus:ring-main/10 outline-none transition-all"
-                placeholder="••••••••"
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded accent-main" />
-                تذكرني
-              </label>
-              <a href="#" className="text-main font-semibold hover:underline">نسيت كلمة المرور؟</a>
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full bg-main text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-main/20 hover:bg-second transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <i className="fa-solid fa-circle-notch animate-spin"></i>
-              ) : (
-                <>
-                  <i className="fa-solid fa-right-to-bracket"></i>
-                  دخول لوحة التحكم
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-12 text-center text-gray-500 text-sm">
-             <p>تحتاج مساعدة؟ تواصل مع الدعم الفني</p>
-          </div>
-        </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full bg-brand text-black py-5 rounded-3xl font-black text-lg hover:bg-white transition-all flex items-center justify-center gap-3 shadow-xl shadow-brand/10"
+          >
+            {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : 'دخول'}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -3,96 +3,55 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 interface SidebarProps {
-  collapsed: boolean;
-  onToggle: () => void;
+  isOpen: boolean;
+  onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onLogout }) => {
   const menuItems = [
-    { name: 'الرئيسية', icon: 'fa-house-chimney', path: '/' },
+    { name: 'الرئيسية', icon: 'fa-chart-pie', path: '/' },
     { name: 'المجموعات', icon: 'fa-layer-group', path: '/groups' },
     { name: 'الطلاب', icon: 'fa-user-graduate', path: '/students' },
-    { name: 'الامتحانات', icon: 'fa-file-invoice', path: '/exams' },
-    { name: 'تسجيل الحضور', icon: 'fa-qrcode', path: '/attendance' },
-    { name: 'المدفوعات', icon: 'fa-vault', path: '/payments' },
+    { name: 'الامتحانات', icon: 'fa-file-signature', path: '/exams' },
+    { name: 'الحضور والتحصيل', icon: 'fa-qrcode', path: '/attendance' },
+    { name: 'السجلات المالية', icon: 'fa-wallet', path: '/payments' },
+    { name: 'المسؤولين', icon: 'fa-user-shield', path: '/users' },
   ];
 
   return (
-    <aside 
-      className={`sidebar-transition h-screen sticky top-0 bg-black dark:bg-[#000000] text-white shadow-[10px_0_30px_rgba(0,0,0,0.5)] overflow-hidden z-40 border-l border-white/5 dark:border-[#22c55e15]
-        ${collapsed ? 'w-0 md:w-24' : 'w-72'}`}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo Section */}
-        <div className={`flex items-center justify-center py-10 transition-all duration-500 ${collapsed ? 'px-2' : 'px-6'}`}>
-          {!collapsed ? (
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-gradient-to-r from-darkMain to-darkSecond rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <img src="https://ro-s.net/img/logo.png" alt="Logo" className="relative h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
-            </div>
-          ) : (
-             <div className="w-12 h-12 bg-gradient-to-br from-[#0f766e] to-[#22c55e] rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.4)]">
-                <i className="fa-solid fa-microchip text-black text-xl"></i>
-             </div>
-          )}
-        </div>
+    <aside className={`${isOpen ? 'w-64' : 'w-20'} h-screen sticky top-0 transition-all duration-300 bg-main dark:bg-black border-l border-white/5 flex flex-col p-4 z-40 shadow-2xl`}>
+      <div className={`mb-10 flex items-center ${isOpen ? 'gap-3 px-2' : 'justify-center'}`}>
+        <img src="https://ro-s.net/img/logo.png" className="w-10 h-10 object-contain" alt="Logo" />
+        {isOpen && <span className="text-xl font-black text-white italic tracking-tighter">DASHBOARD</span>}
+      </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 mt-4 px-4 space-y-2">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => 
-                `flex items-center gap-4 py-3.5 rounded-2xl transition-all duration-300 group relative
-                ${isActive 
-                  ? 'bg-gradient-to-r from-[#0f766e]/20 to-transparent text-[#22c55e] border-r-4 border-[#22c55e] shadow-[inset_0_0_20px_rgba(34,197,94,0.05)]' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'}`
-              }
-            >
-              <div className={`flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${collapsed ? 'w-full' : 'w-12 ml-1'}`}>
-                <i className={`fa-solid ${item.icon} text-lg`}></i>
-              </div>
-              
-              {!collapsed && (
-                <div className="flex flex-col">
-                  <span className="font-black text-sm tracking-wide">{item.name}</span>
-                  <span className="text-[9px] opacity-40 font-bold uppercase tracking-widest leading-none">إدارة النظام</span>
-                </div>
-              )}
+      <nav className="flex-1 space-y-1.5">
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => 
+              `flex items-center ${isOpen ? 'gap-4 px-4' : 'justify-center'} py-3.5 rounded-xl transition-all font-bold text-sm ${
+                isActive 
+                  ? 'text-white bg-white/10 border-r-4 border-brand shadow-lg' 
+                  : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <i className={`fa-solid ${item.icon} text-lg w-6 text-center`}></i>
+            {isOpen && <span className="whitespace-nowrap">{item.name}</span>}
+          </NavLink>
+        ))}
+      </nav>
 
-              {/* Tooltip for collapsed mode */}
-              {collapsed && (
-                <div className="fixed right-24 bg-[#061c17] text-[#22c55e] px-4 py-2 rounded-xl text-xs font-black border border-[#22c55e33] opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-2xl whitespace-nowrap z-50">
-                  {item.name}
-                </div>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Bottom Section / Status */}
-        <div className="p-6 border-t border-white/5 bg-gradient-to-t from-[#061c17] to-transparent">
-           {!collapsed ? (
-             <div className="bg-[#0f766e]/10 border border-[#22c55e1a] rounded-2xl p-4">
-                <div className="flex items-center gap-3 mb-2">
-                   <div className="w-2 h-2 bg-[#22c55e] rounded-full animate-ping"></div>
-                   <p className="text-[10px] font-black text-[#22c55e] uppercase tracking-tighter">الحالة: متصل بالخادم</p>
-                </div>
-                <div className="flex justify-between items-end">
-                   <div>
-                      <p className="text-[9px] text-gray-500 font-bold">آخر تحديث</p>
-                      <p className="text-xs font-black text-gray-300">الآن</p>
-                   </div>
-                   <i className="fa-solid fa-shield-halved text-gray-700 text-xl"></i>
-                </div>
-             </div>
-           ) : (
-             <div className="flex justify-center">
-                <i className="fa-solid fa-circle-check text-[#22c55e] text-xs animate-pulse"></i>
-             </div>
-           )}
-        </div>
+      <div className="pt-6 border-t border-white/10">
+        <button 
+          onClick={onLogout}
+          className={`w-full flex items-center ${isOpen ? 'gap-4 px-4' : 'justify-center'} py-3 rounded-xl text-red-400 font-bold text-sm hover:bg-red-500/10 transition-all`}
+        >
+          <i className="fa-solid fa-power-off w-6 text-center"></i>
+          {isOpen && <span>خروج</span>}
+        </button>
       </div>
     </aside>
   );

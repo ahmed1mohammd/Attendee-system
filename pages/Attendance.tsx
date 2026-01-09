@@ -1,165 +1,103 @@
 
 import React, { useState } from 'react';
-import { Student, Group, Transaction } from '../types';
+import { ApiClient } from '../services/apiClient';
+import { Student, Group } from '../types';
 
-interface AttendanceProps {
-  students: Student[];
-  groups: Group[];
-  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
-  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
-}
+const Attendance: React.FC = () => {
+  const [query, setQuery] = useState('');
+  const [active, setActive] = useState<Student | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<{ t: string, s: 'ok' | 'err' } | null>(null);
 
-const Attendance: React.FC<AttendanceProps> = ({ students, groups, setStudents, setTransactions }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeStudent, setActiveStudent] = useState<Student | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-
-  const handleSearch = (e: React.FormEvent) => {
+  const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    const found = students.find(s => s.phone === searchQuery || s.id === searchQuery || s.qrCode === searchQuery);
-    if (found) {
-      setActiveStudent(found);
-      setMessage(null);
-    } else {
-      setMessage({ text: 'عفواً، لم يتم العثور على الطالب', type: 'error' });
-      setActiveStudent(null);
+    setLoading(true);
+    setMsg(null);
+    try {
+      const student = await ApiClient.get<Student>(`/students/search?q=${query}`);
+      setActive(student);
+    } catch (err: any) {
+      setMsg({ t: 'لم يتم العثور على الطالب', s: 'err' });
+      setActive(null);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const simulateScan = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      const randomStudent = students[Math.floor(Math.random() * students.length)];
-      setActiveStudent(randomStudent);
-      setIsScanning(false);
-      setMessage({ text: 'تم فحص الكود بنجاح', type: 'success' });
-    }, 1500);
-  };
-
-  const confirmAttendance = () => {
-    if (!activeStudent) return;
-    
-    const group = groups.find(g => g.id === activeStudent.groupId);
-    const amount = group?.price || 0;
-
-    // 1. Create Transaction
-    const newTransaction: Transaction = {
-      id: 't' + Date.now(),
-      studentName: activeStudent.name,
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      groupName: group?.name || 'غير معروف'
-    };
-
-    // 2. Update Global States
-    setTransactions(prev => [newTransaction, ...prev]);
-    setStudents(prev => prev.map(s => 
-      s.id === activeStudent.id 
-        ? { ...s, attendanceCount: s.attendanceCount + 1, isPaid: true } 
-        : s
-    ));
-
-    setMessage({ text: `تم تسجيل حضور ${activeStudent.name} ودفع مبلغ ${amount} ج.م بنجاح!`, type: 'success' });
-    
-    setTimeout(() => {
-      setActiveStudent(null);
-      setSearchQuery('');
-      setMessage(null);
-    }, 3000);
+  const markAttendance = async () => {
+    if (!active) return;
+    setLoading(true);
+    try {
+      await ApiClient.post('/attendance/mark', { studentId: active.id });
+      setMsg({ t: `تم تسجيل حضور ${active.name} بنجاح`, s: 'ok' });
+      setActive(null);
+      setQuery('');
+    } catch (err: any) {
+      setMsg({ t: 'حدث خطأ أثناء التسجيل', s: 'err' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
+    <div className="max-w-4xl mx-auto space-y-12 animate-fadeIn">
       <div className="text-center">
-         <h2 className="text-4xl font-black text-main mb-2">تسجيل حضور المحاضرة</h2>
-         <p className="text-gray-500 font-bold">تسجيل الحضور يقوم تلقائياً بخصم تكلفة الحصة</p>
+        <h2 className="text-4xl font-black text-black dark:text-white italic uppercase tracking-tighter">Smart Attendance</h2>
+        <p className="text-brand font-bold text-[10px] uppercase tracking-[0.5em] mt-2">QR & Manual Scan System</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-         <div className="card bg-white dark:bg-zinc-900 border-0 shadow-2xl p-8 text-center space-y-6">
-            <h3 className="text-xl font-bold border-b dark:border-zinc-800 pb-4">جهاز الفحص الضوئي (QR)</h3>
-            <div className={`relative w-64 h-64 mx-auto border-4 border-dashed rounded-[40px] flex items-center justify-center transition-all ${isScanning ? 'border-main scale-105' : 'border-gray-200'}`}>
-               {isScanning && (
-                 <div className="absolute inset-0 bg-main/5 animate-pulse overflow-hidden rounded-[40px]">
-                    <div className="w-full h-1.5 bg-main absolute top-0 animate-scan"></div>
-                 </div>
-               )}
-               <i className={`fa-solid fa-qrcode text-8xl ${isScanning ? 'text-main' : 'text-gray-200'}`}></i>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="card p-12 rounded-[48px] flex flex-col items-center gap-10 bg-white dark:bg-black border-gray-100 dark:border-zinc-900">
+           <div className="w-64 h-64 bg-gray-50 dark:bg-zinc-900/50 rounded-[48px] border-4 border-dashed border-gray-100 dark:border-zinc-800 flex items-center justify-center relative overflow-hidden shadow-inner">
+             <div className="absolute top-0 left-0 w-full h-1 bg-brand qr-scanner-line opacity-50"></div>
+             <i className="fa-solid fa-qrcode text-8xl text-gray-200 dark:text-zinc-800"></i>
+           </div>
+           <button className="w-full bg-main dark:bg-brand text-white dark:text-black py-6 rounded-3xl font-black text-lg shadow-2xl hover:scale-[1.02] transition-all">
+             تفعيل الكاميرا
+           </button>
+        </div>
+
+        <div className="space-y-8">
+          <div className="card p-10 rounded-[40px] border-gray-100 dark:border-zinc-900 bg-white dark:bg-black">
+            <h3 className="text-lg font-black text-black dark:text-white mb-8">بحث يدوي</h3>
+            <form onSubmit={search} className="flex gap-3">
+              <input 
+                type="text" placeholder="رقم الهاتف أو كود الطالب..." 
+                className="flex-1 bg-gray-50 dark:bg-zinc-900 p-5 rounded-2xl outline-none border border-transparent focus:border-brand font-bold text-center text-black dark:text-white"
+                value={query} onChange={e => setQuery(e.target.value)}
+              />
+              <button disabled={loading} className="bg-black dark:bg-white text-white dark:text-black px-8 rounded-2xl font-black">
+                {loading ? <i className="fa-solid fa-spinner animate-spin"></i> : 'بحث'}
+              </button>
+            </form>
+            {msg && <div className={`mt-6 p-5 rounded-2xl text-[11px] font-black text-center ${msg.s === 'ok' ? 'bg-brand/10 text-brand' : 'bg-red-500/10 text-red-500'}`}>{msg.t}</div>}
+          </div>
+
+          {active && (
+            <div className="card p-10 rounded-[40px] border-brand/20 bg-brand/5 animate-scaleIn shadow-2xl">
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-16 h-16 bg-main dark:bg-brand text-white dark:text-black rounded-2xl flex items-center justify-center text-3xl font-black">
+                  {active.name[0]}
+                </div>
+                <div>
+                  <h4 className="text-2xl font-black text-black dark:text-white">{active.name}</h4>
+                  <p className="text-brand font-bold text-[10px] uppercase tracking-widest mt-1">طالب مسجل</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  onClick={markAttendance}
+                  disabled={loading}
+                  className="flex-1 bg-black dark:bg-brand text-white dark:text-black py-5 rounded-2xl font-black text-lg shadow-xl"
+                >
+                  تأكيد الحضور
+                </button>
+                <button onClick={() => setActive(null)} className="px-8 bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 text-gray-400 rounded-2xl">إلغاء</button>
+              </div>
             </div>
-            <button 
-              onClick={simulateScan}
-              disabled={isScanning}
-              className="w-full py-4 bg-main text-white rounded-2xl font-black text-lg shadow-xl shadow-main/20 hover:scale-[1.02] transition-transform disabled:opacity-50"
-            >
-              {isScanning ? 'جاري الفحص...' : 'تشغيل الكاميرا للفحص'}
-            </button>
-         </div>
-
-         <div className="space-y-6">
-            <div className="card bg-white dark:bg-zinc-900 border-0 shadow-2xl p-8">
-               <h3 className="text-xl font-bold mb-6">بحث يدوي سريع</h3>
-               <form onSubmit={handleSearch} className="space-y-4">
-                  <div className="relative">
-                     <input 
-                       type="text" 
-                       className="w-full bg-gray-50 dark:bg-zinc-800 border-0 p-5 rounded-2xl text-xl font-bold outline-none focus:ring-4 focus:ring-main/10 pr-14"
-                       placeholder="رقم الموبايل أو كود الطالب..."
-                       value={searchQuery}
-                       onChange={e => setSearchQuery(e.target.value)}
-                     />
-                     <i className="fa-solid fa-magnifying-glass absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 text-xl"></i>
-                  </div>
-                  <button className="w-full py-4 bg-zinc-800 dark:bg-zinc-700 text-white rounded-2xl font-bold shadow-lg">تحقق من الكود</button>
-               </form>
-
-               {message && (
-                 <div className={`mt-6 p-4 rounded-xl flex items-center gap-3 font-bold text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                    <i className={`fa-solid ${message.type === 'success' ? 'fa-check-circle' : 'fa-triangle-exclamation'}`}></i>
-                    {message.text}
-                 </div>
-               )}
-            </div>
-
-            {activeStudent && (
-               <div className="card bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6 border-r-8 border-main animate-slideUp">
-                  <div className="flex items-start gap-6">
-                     <div className="w-20 h-20 rounded-2xl bg-main/10 flex items-center justify-center text-main text-3xl font-black">
-                        {activeStudent.name[0]}
-                     </div>
-                     <div className="flex-1">
-                        <h4 className="text-2xl font-black mb-1">{activeStudent.name}</h4>
-                        <p className="text-gray-500 font-bold mb-4">{groups.find(g => g.id === activeStudent.groupId)?.name}</p>
-                        
-                        <div className="flex flex-wrap gap-2">
-                           <span className={`px-4 py-1 rounded-full text-xs font-bold ${activeStudent.isPaid ? 'bg-green-500/10 text-green-500' : 'bg-red-500/20 text-red-600 animate-pulse'}`}>
-                              {activeStudent.isPaid ? 'الحساب: مدفوع مسبقاً' : 'الحساب: سيتم تحصيل الرسوم'}
-                           </span>
-                           <span className="px-4 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-bold">
-                              الحضور التراكمي: {activeStudent.attendanceCount}
-                           </span>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mt-6">
-                     <button onClick={confirmAttendance} className="bg-main text-white py-4 rounded-2xl font-black shadow-lg">تأكيد الحضور والدفع</button>
-                     <button onClick={() => setActiveStudent(null)} className="bg-gray-100 dark:bg-zinc-800 py-4 rounded-2xl font-bold text-gray-500">إلغاء</button>
-                  </div>
-               </div>
-            )}
-         </div>
+          )}
+        </div>
       </div>
-
-      <style>{`
-        @keyframes scan {
-          0% { top: 0; }
-          50% { top: 100%; }
-          100% { top: 0; }
-        }
-        .animate-scan {
-          animation: scan 3s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,4 +1,13 @@
 
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+  phone: string;
+  role: 'Admin' | 'Manager';
+  password?: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -15,7 +24,14 @@ export interface Group {
   days: string[];
   time: string;
   price: number;
-  studentCount: number;
+}
+
+export interface AbsenceRecord {
+  id: string;
+  studentId: string;
+  groupId: string;
+  date: string;
+  status: 'present' | 'absent';
 }
 
 export interface Exam {
@@ -24,10 +40,12 @@ export interface Exam {
   groupId: string;
   date: string;
   maxScore: number;
+  scores: Record<string, number>; // studentId -> score
 }
 
 export interface Transaction {
   id: string;
+  studentId: string;
   studentName: string;
   amount: number;
   date: string;

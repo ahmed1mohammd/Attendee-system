@@ -1,68 +1,61 @@
 
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>نظام إدارة الطلاب الذكي</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700;800;900;1000&display=swap" rel="stylesheet">
     <style>
       :root {
-        /* الألوان الأساسية للوضع الفاتح */
-        --main-l: #16423C;
-        --second-l: #6A9C89;
+        --brand-color: #16423C; /* أخضر غامق للوضع الفاتح */
+        --bg-color: #ffffff;
+        --text-color: #000000;
+        --card-bg: #ffffff;
+        --card-border: #e5e7eb;
         
-        /* الألوان الجديدة للوضع الداكن (طلب المستخدم) */
-        --main-d: #0f766e;      /* أخضر أساسي */
-        --second-d: #22c55e;    /* أخضر فاتح */
-        --bg-d: #000000;        /* خلفية سوداء */
-        --card-d: #061c17;      /* كروت داكنة */
-        --text-d: #e6fff6;      /* نصوص مبيضة مخضرة */
-        --gradient-d: linear-gradient(to left, #000000, #0f2f27 70%);
-      }
-      
-      body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        margin: 0;
-        transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        --main-color: #16423C;
+        --second-color: #6A9C89;
+        --third-color: #ffffff;
+        --four-color: #C4DAD2;
       }
 
-      /* السكرول بار */
+      html.dark {
+        --brand-color: #22c55e; /* أخضر فسفوري للوضع الداكن فقط */
+        --bg-color: #000000;
+        --text-color: #ffffff;
+        --card-bg: #0a0a0a;
+        --card-border: #1a1a1a;
+      }
+
+      body {
+        font-family: 'Cairo', sans-serif;
+        margin: 0;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+        transition: all 0.3s ease;
+      }
+
+      @keyframes scan {
+        0% { transform: translateY(0); opacity: 0.2; }
+        50% { transform: translateY(240px); opacity: 1; }
+        100% { transform: translateY(0); opacity: 0.2; }
+      }
+      .qr-scanner-line {
+        animation: scan 2.5s infinite ease-in-out;
+      }
+
       ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #0f766e; border-radius: 10px; }
-      
-      .dark body {
-        background: var(--bg-d) !important;
-        background-image: var(--gradient-d) !important;
-        background-attachment: fixed !important;
-        color: var(--text-d) !important;
-      }
-
-      .dark .card {
-        background-color: var(--card-d) !important;
-        border: 1px solid rgba(34, 197, 94, 0.1) !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-      }
-
-      .sidebar-transition {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      
-      .card {
-        border-radius: 28px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: none;
-      }
-
-      @media print {
-        .no-print { display: none !important; }
-      }
+      ::-webkit-scrollbar-thumb { background: var(--brand-color); border-radius: 10px; }
     </style>
     <script>
       tailwind.config = {
@@ -70,14 +63,10 @@
         theme: {
           extend: {
             colors: {
+              brand: 'var(--brand-color)',
               main: '#16423C',
               second: '#6A9C89',
-              // ألوان الدارك مود الجديدة المطلوبة
-              darkMain: '#0f766e',
-              darkSecond: '#22c55e',
-              darkBg: '#000000',
-              darkCard: '#061c17',
-              darkText: '#e6fff6',
+              third: 'var(--bg-color)',
             }
           }
         }
@@ -95,7 +84,7 @@
     }
     </script>
   </head>
-  <body class="bg-gray-50 dark:bg-darkBg text-gray-900 dark:text-darkText">
+  <body class="selection:bg-brand selection:text-white">
     <div id="root"></div>
   </body>
 </html>
