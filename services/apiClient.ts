@@ -1,7 +1,7 @@
 
 const BASE_URL = 'https://api.yoursystem.com/v1';
 
-// بيانات تجريبية للمعاينة (Mock Data)
+// Mock Data Storage for Demo
 const MOCK_DATA: Record<string, any> = {
   '/auth/me': { id: '1', username: 'admin', name: 'المهندس المشرف', role: 'Admin', phone: '0100000000' },
   '/dashboard/stats': {
@@ -19,12 +19,10 @@ const MOCK_DATA: Record<string, any> = {
     { id: 'g1', name: 'مجموعة العباقرة (A1)', price: 150, days: ['الأحد', 'الثلاثاء'], time: '04:00 م' },
     { id: 'g2', name: 'مجموعة التميز (B2)', price: 200, days: ['الاثنين', 'الخميس'], time: '06:00 م' },
   ],
-  '/groups/g1': { id: 'g1', name: 'مجموعة العباقرة (A1)', price: 150, days: ['الأحد', 'الثلاثاء'], time: '04:00 م' },
-  '/groups/g2': { id: 'g2', name: 'مجموعة التميز (B2)', price: 200, days: ['الاثنين', 'الخميس'], time: '06:00 م' },
   '/students': [
-    { id: 's1', name: 'أحمد محمد علي', phone: '01012345678', groupId: 'g1', qrCode: 'STU-9921' },
-    { id: 's2', name: 'سارة محمود ذكي', phone: '01298765432', groupId: 'g2', qrCode: 'STU-8832' },
-    { id: 's3', name: 'ياسين حسن كمال', phone: '01155667788', groupId: 'g1', qrCode: 'STU-7743' },
+    { id: 's1', name: 'أحمد محمد علي', phone: '01012345678', groupId: 'g1', qrCode: 'STU-9921', isPaid: true, attendanceCount: 5 },
+    { id: 's2', name: 'سارة محمود ذكي', phone: '01298765432', groupId: 'g2', qrCode: 'STU-8832', isPaid: false, attendanceCount: 2 },
+    { id: 's3', name: 'ياسين حسن كمال', phone: '01155667788', groupId: 'g1', qrCode: 'STU-7743', isPaid: true, attendanceCount: 8 },
   ],
   '/payments': [
     { id: 'p1', studentName: 'أحمد محمد علي', amount: 150, date: '2023-10-25', groupName: 'مجموعة العباقرة' },
@@ -52,7 +50,6 @@ export class ApiClient {
 
   private static async handleResponse(response: Response, path: string) {
     if (!response.ok) {
-      // Logic for path matching with query params or IDs
       const cleanPath = path.split('?')[0];
       if (MOCK_DATA[cleanPath] || MOCK_DATA[path]) {
         console.warn(`API: ${path} not found, returning MOCK.`);
@@ -82,8 +79,8 @@ export class ApiClient {
         const gid = path.split('groupId=')[1].split('&')[0];
         return MOCK_DATA['/students'].filter((s: any) => s.groupId === gid) as T;
       }
-      if (cleanPath === '/attendance') return [] as any;
       if (MOCK_DATA[cleanPath] || MOCK_DATA[path]) return MOCK_DATA[cleanPath] || MOCK_DATA[path];
+      if (cleanPath === '/attendance') return [] as any;
       throw e;
     }
   }
@@ -104,7 +101,16 @@ export class ApiClient {
       return this.handleResponse(response, path);
     } catch (e) {
       console.log(`Mock POST to ${path}`);
-      return { id: 'temp-' + Date.now(), ...data } as T;
+      
+      if (path === '/students') {
+        const id = 's' + Math.random().toString(36).substr(2, 9);
+        const qrCode = 'STU-' + Math.floor(1000 + Math.random() * 9000);
+        const newStudent = { id, qrCode, isPaid: false, attendanceCount: 0, ...data };
+        MOCK_DATA['/students'].push(newStudent);
+        return newStudent as T;
+      }
+      
+      return { id: 'mock-' + Date.now(), ...data } as T;
     }
   }
 
@@ -117,6 +123,14 @@ export class ApiClient {
       });
       return this.handleResponse(response, path);
     } catch (e) {
+      if (path.startsWith('/students/')) {
+        const id = path.split('/').pop();
+        const index = MOCK_DATA['/students'].findIndex((s: any) => s.id === id);
+        if (index !== -1) {
+          MOCK_DATA['/students'][index] = { ...MOCK_DATA['/students'][index], ...data };
+          return MOCK_DATA['/students'][index] as T;
+        }
+      }
       return data as T;
     }
   }
@@ -129,7 +143,10 @@ export class ApiClient {
       });
       await this.handleResponse(response, path);
     } catch (e) {
-      console.log(`Mock DELETE to ${path}`);
+      if (path.startsWith('/students/')) {
+        const id = path.split('/').pop();
+        MOCK_DATA['/students'] = MOCK_DATA['/students'].filter((s: any) => s.id !== id);
+      }
     }
   }
 }
