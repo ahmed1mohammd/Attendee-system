@@ -5,9 +5,10 @@ import { NavLink } from 'react-router-dom';
 interface SidebarProps {
   isOpen: boolean;
   onLogout: () => void;
+  toggleSidebar: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onLogout, toggleSidebar }) => {
   const menuItems = [
     { name: 'الرئيسية', icon: 'fa-chart-pie', path: '/' },
     { name: 'المجموعات', icon: 'fa-layer-group', path: '/groups' },
@@ -19,17 +20,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onLogout }) => {
   ];
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} h-screen sticky top-0 transition-all duration-300 bg-main dark:bg-black border-l border-white/5 flex flex-col p-4 z-40 shadow-2xl`}>
-      <div className={`mb-10 flex items-center ${isOpen ? 'gap-3 px-2' : 'justify-center'}`}>
-        <img src="https://ro-s.net/img/logo.png" className="w-10 h-10 object-contain" alt="Logo" />
-        {isOpen && <span className="text-xl font-black text-white italic tracking-tighter">DASHBOARD</span>}
+    <aside 
+      className={`
+        fixed inset-y-0 right-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0
+        ${isOpen ? 'translate-x-0 w-64 md:w-72' : 'translate-x-full lg:translate-x-0 lg:w-20'}
+        bg-main dark:bg-black border-l border-white/5 flex flex-col p-4 shadow-2xl h-screen
+      `}
+    >
+      <div className={`mb-10 flex items-center justify-between ${isOpen ? 'px-2' : 'justify-center'}`}>
+        <div className="flex items-center gap-3">
+          <img src="https://ro-s.net/img/logo.png" className="w-10 h-10 object-contain" alt="Logo" />
+          {(isOpen || window.innerWidth < 1024) && <span className="text-xl font-black text-white italic tracking-tighter">DASHBOARD</span>}
+        </div>
+        <button onClick={toggleSidebar} className="lg:hidden text-white/50 hover:text-white">
+          <i className="fa-solid fa-xmark text-xl"></i>
+        </button>
       </div>
 
-      <nav className="flex-1 space-y-1.5">
+      <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={() => window.innerWidth < 1024 && toggleSidebar()}
             className={({ isActive }) => 
               `flex items-center ${isOpen ? 'gap-4 px-4' : 'justify-center'} py-3.5 rounded-xl transition-all font-bold text-sm ${
                 isActive 

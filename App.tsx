@@ -20,7 +20,7 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default closed on mobile
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -32,6 +32,20 @@ const App: React.FC = () => {
     } else {
       setLoading(false);
     }
+  }, []);
+
+  // Handle sidebar visibility based on screen size
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
+      }
+    };
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -50,9 +64,9 @@ const App: React.FC = () => {
 
   if (loading) return (
     <div className="h-screen bg-black flex items-center justify-center font-['Cairo']">
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-4 p-6 text-center">
         <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-white font-bold tracking-widest text-xs uppercase">Connecting to Server...</p>
+        <p className="text-white font-bold tracking-widest text-xs uppercase">جاري الاتصال بالنظام...</p>
       </div>
     </div>
   );
@@ -61,10 +75,18 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="flex min-h-screen bg-white dark:bg-black font-['Cairo'] transition-colors duration-300">
-        <Sidebar isOpen={isSidebarOpen} onLogout={handleLogout} />
+      <div className="flex min-h-screen bg-white dark:bg-black font-['Cairo'] transition-colors duration-300 overflow-x-hidden">
+        {/* Mobile Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <Sidebar isOpen={isSidebarOpen} onLogout={handleLogout} toggleSidebar={() => setIsSidebarOpen(false)} />
+
+        <div className="flex-1 flex flex-col min-w-0 w-full">
           <Navbar 
             theme={theme} 
             toggleTheme={() => setTheme(p => p === 'dark' ? 'light' : 'dark')} 
@@ -72,8 +94,8 @@ const App: React.FC = () => {
             user={currentUser}
           />
           
-          <main className="p-4 md:p-8 flex-1 overflow-y-auto bg-gray-50/30 dark:bg-black">
-            <div className="max-w-7xl mx-auto">
+          <main className="p-4 md:p-6 lg:p-8 flex-1 overflow-y-auto bg-gray-50/30 dark:bg-black w-full overflow-x-hidden">
+            <div className="max-w-7xl mx-auto w-full">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/groups" element={<Groups />} />
