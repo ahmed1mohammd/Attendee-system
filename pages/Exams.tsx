@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { ApiClient } from '../services/apiClient';
 import { Exam, Group, Student } from '../types';
 
-// Removed ExamsProps interface as component now handles its own data fetching via ApiClient
 const Exams: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -14,7 +13,6 @@ const Exams: React.FC = () => {
   const [gradingExam, setGradingExam] = useState<Exam | null>(null);
   const [examForm, setExamForm] = useState<Partial<Exam>>({ name: '', groupId: '', maxScore: 50, date: new Date().toISOString().split('T')[0] });
 
-  // Fetch exams, groups, and students from the API to satisfy data requirements
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -60,10 +58,7 @@ const Exams: React.FC = () => {
     if (!gradingExam) return;
     const updatedScores = { ...gradingExam.scores, [studentId]: score };
     try {
-      // Persist the updated score via API
       await ApiClient.put(`/exams/${gradingExam.id}`, { ...gradingExam, scores: updatedScores });
-      
-      // Update local states for immediate UI feedback
       setExams(prev => prev.map(ex => {
         if (ex.id === gradingExam.id) {
           return { ...ex, scores: updatedScores };
@@ -93,16 +88,16 @@ const Exams: React.FC = () => {
     return (
       <div className="space-y-8 animate-fadeIn">
         <div className="flex items-center gap-6 border-b border-gray-100 dark:border-zinc-900 pb-8">
-          <button onClick={() => setGradingExam(null)} className="w-12 h-12 bg-gray-50 dark:bg-zinc-900 rounded-2xl flex items-center justify-center text-black dark:text-zinc-400">
+          <button onClick={() => setGradingExam(null)} className="w-12 h-12 bg-gray-50 dark:bg-zinc-900 rounded-2xl flex items-center justify-center text-black dark:text-zinc-400 hover:text-brand transition-all">
             <i className="fa-solid fa-arrow-right"></i>
           </button>
           <div>
-            <h2 className="text-3xl font-black text-black dark:text-white">رصد درجات: {gradingExam.name}</h2>
+            <h2 className="text-xl md:text-3xl font-black text-black dark:text-white">رصد درجات: {gradingExam.name}</h2>
             <p className="text-brand text-xs font-bold uppercase tracking-widest mt-1">الدرجة النهائية: {gradingExam.maxScore}</p>
           </div>
         </div>
-        <div className="card overflow-hidden rounded-[32px] border-gray-100 dark:border-zinc-900">
-          <table className="w-full text-right">
+        <div className="card overflow-x-auto rounded-[32px] border-gray-100 dark:border-zinc-900 bg-white dark:bg-black">
+          <table className="w-full text-right min-w-[300px]">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900/50 text-gray-400 font-black text-[10px] uppercase tracking-widest border-b border-gray-100 dark:border-zinc-900">
                 <th className="p-6">اسم الطالب</th>
@@ -116,13 +111,16 @@ const Exams: React.FC = () => {
                   <td className="p-6 text-center">
                     <input 
                       type="number" 
-                      className="w-24 bg-gray-100 dark:bg-black border border-gray-200 dark:border-zinc-800 p-2 rounded-xl text-center font-black text-brand outline-none focus:border-brand"
+                      className="w-20 md:w-24 bg-gray-100 dark:bg-black border border-gray-200 dark:border-zinc-800 p-2 rounded-xl text-center font-black text-brand outline-none focus:border-brand"
                       value={gradingExam.scores[s.id] || 0}
                       onChange={e => updateScore(s.id, Number(e.target.value))}
                     />
                   </td>
                 </tr>
               ))}
+              {groupStudents.length === 0 && (
+                <tr><td colSpan={2} className="p-10 text-center text-gray-400 italic font-bold">لا يوجد طلاب في هذه المجموعة</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -131,61 +129,81 @@ const Exams: React.FC = () => {
   }
 
   return (
-    <div className="space-y-10 animate-fadeIn">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-black text-black dark:text-white">الامتحانات</h2>
-        <div className="flex gap-4">
-          <div className="relative">
+    <div className="space-y-10 animate-fadeIn pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-2">
+        <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white">الامتحانات</h2>
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:w-64">
              <input 
               type="text" placeholder="بحث..." 
-              className="bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-3 pr-10 rounded-xl outline-none text-xs font-bold w-64"
+              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-3 pr-10 rounded-xl outline-none text-xs font-bold shadow-sm"
               value={search} onChange={e => setSearch(e.target.value)}
              />
              <i className="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           </div>
-          <button onClick={() => { setExamForm({ name: '', groupId: '', maxScore: 50, date: new Date().toISOString().split('T')[0] }); setShowModal(true); }} className="bg-main dark:bg-brand text-white dark:text-black px-6 rounded-xl font-bold flex items-center gap-2">
+          <button 
+            onClick={() => { setExamForm({ name: '', groupId: '', maxScore: 50, date: new Date().toISOString().split('T')[0] }); setShowModal(true); }} 
+            className="w-full sm:w-auto bg-main dark:bg-brand text-white dark:text-black px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-brand/10 transition-transform active:scale-95"
+          >
             <i className="fa-solid fa-file-signature"></i> إضافة امتحان
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-2">
         {filtered.map(ex => (
-          <div key={ex.id} className="card p-8 rounded-[32px] border-gray-100 dark:border-zinc-900 shadow-sm relative overflow-hidden group">
+          <div key={ex.id} className="card p-6 md:p-8 rounded-[32px] border-gray-100 dark:border-zinc-900 shadow-sm relative overflow-hidden group bg-white dark:bg-black">
             <div className="flex justify-between items-start mb-6">
               <span className="bg-brand/10 text-brand px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">EXAM LOG</span>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => { setExamForm(ex); setShowModal(true); }} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-black dark:text-white hover:text-brand"><i className="fa-solid fa-edit"></i></button>
-                <button onClick={() => del(ex.id)} className="w-8 h-8 bg-red-50 dark:bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500 hover:text-white"><i className="fa-solid fa-trash"></i></button>
+              <div className="flex gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => { setExamForm(ex); setShowModal(true); }} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-black dark:text-white hover:text-brand"><i className="fa-solid fa-edit text-xs"></i></button>
+                <button onClick={() => del(ex.id)} className="w-8 h-8 bg-red-50 dark:bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500 hover:text-white"><i className="fa-solid fa-trash text-xs"></i></button>
               </div>
             </div>
-            <h3 className="text-2xl font-black text-black dark:text-white mb-2">{ex.name}</h3>
-            <p className="text-gray-400 font-bold text-[10px] uppercase">المجموعة: {groups.find(g => g.id === ex.groupId)?.name}</p>
+            <h3 className="text-xl md:text-2xl font-black text-black dark:text-white mb-2 truncate">{ex.name}</h3>
+            <p className="text-gray-400 font-bold text-[10px] uppercase truncate">المجموعة: {groups.find(g => g.id === ex.groupId)?.name || 'غير معروفة'}</p>
             <div className="mt-8 flex items-center justify-between">
-              <div className="text-center bg-gray-50 dark:bg-zinc-900 px-6 py-3 rounded-2xl border border-gray-100 dark:border-zinc-800">
-                <p className="text-2xl font-black text-brand">{ex.maxScore}</p>
+              <div className="text-center bg-gray-50 dark:bg-zinc-900 px-4 md:px-6 py-2 md:py-3 rounded-2xl border border-gray-100 dark:border-zinc-800">
+                <p className="text-xl md:text-2xl font-black text-brand tracking-tighter">{ex.maxScore}</p>
                 <p className="text-[9px] text-gray-400 font-bold uppercase">النهائية</p>
               </div>
-              <button onClick={() => setGradingExam(ex)} className="bg-black dark:bg-white text-white dark:text-black px-6 py-4 rounded-2xl font-black text-sm hover:scale-[1.02] transition-transform shadow-lg">رصد الدرجات</button>
+              <button onClick={() => setGradingExam(ex)} className="bg-black dark:bg-zinc-900 text-white dark:text-brand border border-transparent dark:border-brand/20 px-5 py-3 md:px-6 md:py-4 rounded-2xl font-black text-xs md:text-sm hover:scale-[1.02] transition-transform shadow-lg">رصد الدرجات</button>
             </div>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className="col-span-full py-20 text-center text-gray-400 font-bold italic">لا توجد امتحانات مسجلة</div>
+        )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <form onSubmit={saveExam} className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] p-10 space-y-6">
-            <h3 className="text-2xl font-black text-black dark:text-white">بيانات الامتحان</h3>
-            <input type="text" placeholder="اسم الامتحان" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold" value={examForm.name} onChange={e => setExamForm({...examForm, name: e.target.value})} />
-            <select className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold" value={examForm.groupId} onChange={e => setExamForm({...examForm, groupId: e.target.value})}>
-              <option value="">اختر المجموعة...</option>
-              {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-            </select>
-            <input type="number" placeholder="الدرجة النهائية" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold" value={examForm.maxScore} onChange={e => setExamForm({...examForm, maxScore: Number(e.target.value)})} />
-            <input type="date" required className="w-full bg-gray-50 dark:bg-zinc-900 p-4 rounded-2xl outline-none font-bold" value={examForm.date} onChange={e => setExamForm({...examForm, date: e.target.value})} />
-            <div className="flex gap-4">
-              <button type="submit" className="flex-1 bg-main dark:bg-brand text-white py-4 rounded-2xl font-black">حفظ</button>
-              <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 rounded-2xl text-black">إلغاء</button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <form onSubmit={saveExam} className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[40px] p-8 md:p-10 space-y-4 md:space-y-6 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar">
+            <h3 className="text-xl md:text-2xl font-black text-black dark:text-white mb-4">بيانات الامتحان</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">اسم الامتحان</label>
+                <input type="text" placeholder="مثلاً: اختبار أكتوبر" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.name} onChange={e => setExamForm({...examForm, name: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">المجموعة المستهدفة</label>
+                <select className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.groupId} onChange={e => setExamForm({...examForm, groupId: e.target.value})}>
+                  <option value="">اختر المجموعة...</option>
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">الدرجة النهائية</label>
+                <input type="number" placeholder="50" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.maxScore} onChange={e => setExamForm({...examForm, maxScore: Number(e.target.value)})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">تاريخ الامتحان</label>
+                <input type="date" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.date} onChange={e => setExamForm({...examForm, date: e.target.value})} />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-6">
+              <button type="submit" className="flex-1 bg-main dark:bg-brand text-white dark:text-black py-4 md:py-5 rounded-2xl font-black text-base shadow-xl">حفظ</button>
+              <button type="button" onClick={() => setShowModal(false)} className="flex-1 bg-gray-100 text-black py-4 md:py-5 rounded-2xl font-bold text-sm">إلغاء</button>
             </div>
           </form>
         </div>

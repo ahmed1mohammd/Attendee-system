@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onLogout, toggleSidebar }) =>
       <div className={`mb-10 flex items-center justify-between ${isOpen ? 'px-2' : 'justify-center'}`}>
         <div className="flex items-center gap-3">
           <img src="https://ro-s.net/img/logo.png" className="w-10 h-10 object-contain" alt="Logo" />
-          {(isOpen || window.innerWidth < 1024) && <span className="text-xl font-black text-white italic tracking-tighter">DASHBOARD</span>}
+          {(isOpen || window.innerWidth < 1024) && <span className="text-xl font-black text-white italic tracking-tighter">Ros Center</span>}
         </div>
         <button onClick={toggleSidebar} className="lg:hidden text-white/50 hover:text-white">
           <i className="fa-solid fa-xmark text-xl"></i>
