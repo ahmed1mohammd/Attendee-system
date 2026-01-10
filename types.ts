@@ -47,7 +47,16 @@ export interface Transaction {
   id: string;
   studentId: string;
   studentName: string;
+  groupId: string; // تم الإضافة لدعم التجميع المالي
   amount: number;
   date: string;
   groupName: string;
+}
+
+export interface GroupFinanceSummary {
+  groupId: string;
+  groupName: string;
+  sessionIncome: number;
+  weeklyIncome: number;
+  monthlyIncome: number;
 }

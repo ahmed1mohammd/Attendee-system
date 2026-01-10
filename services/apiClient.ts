@@ -10,9 +10,9 @@ const MOCK_DATA: Record<string, any> = {
     totalIncome: 12450,
     examsCount: 24,
     recentPayments: [
-      { id: '1', studentName: 'أحمد محمد علي', amount: 150, groupName: 'مجموعة الأحد' },
-      { id: '2', studentName: 'سارة محمود', amount: 200, groupName: 'مجموعة الثلاثاء' },
-      { id: '3', studentName: 'ياسين حسن', amount: 150, groupName: 'مجموعة الأحد' },
+      { id: '1', studentName: 'أحمد محمد علي', amount: 150, groupName: 'مجموعة العباقرة (A1)', date: '2024-05-20' },
+      { id: '2', studentName: 'سارة محمود', amount: 200, groupName: 'مجموعة التميز (B2)', date: '2024-05-20' },
+      { id: '3', studentName: 'ياسين حسن', amount: 150, groupName: 'مجموعة العباقرة (A1)', date: '2024-05-19' },
     ]
   },
   '/groups': [
@@ -25,10 +25,17 @@ const MOCK_DATA: Record<string, any> = {
     { id: 's3', name: 'ياسين حسن كمال', phone: '01155667788', groupId: 'g1', qrCode: 'STU-7743', isPaid: true, attendanceCount: 8 },
   ],
   '/payments': [
-    { id: 'p1', studentName: 'أحمد محمد علي', amount: 150, date: '2023-10-25', groupName: 'مجموعة العباقرة' },
-    { id: 'p2', studentName: 'سارة محمود ذكي', amount: 200, date: '2023-10-24', groupName: 'مجموعة التميز' },
+    { id: 'p1', studentId: 's1', studentName: 'أحمد محمد علي', groupId: 'g1', amount: 150, date: '2024-05-20', groupName: 'مجموعة العباقرة (A1)' },
+    { id: 'p2', studentId: 's2', studentName: 'سارة محمود ذكي', groupId: 'g2', amount: 200, date: '2024-05-20', groupName: 'مجموعة التميز (B2)' },
+    { id: 'p3', studentId: 's3', studentName: 'ياسين حسن كمال', groupId: 'g1', amount: 150, date: '2024-05-20', groupName: 'مجموعة العباقرة (A1)' },
+    { id: 'p4', studentId: 's1', studentName: 'أحمد محمد علي', groupId: 'g1', amount: 150, date: '2024-05-18', groupName: 'مجموعة العباقرة (A1)' },
   ],
-  '/payments/stats': { daily: 1200, weekly: 8500, monthly: 32000 },
+  '/payments/stats': { daily: 1450, weekly: 12850, monthly: 48000 },
+  '/payments/group-summaries': [
+    { groupId: 'g1', groupName: 'مجموعة العباقرة (A1)', sessionIncome: 450, weeklyIncome: 3150, monthlyIncome: 12600 },
+    { groupId: 'g2', groupName: 'مجموعة التميز (B2)', sessionIncome: 800, weeklyIncome: 5600, monthlyIncome: 22400 },
+    { groupId: 'g3', groupName: 'مجموعة الأوائل (C3)', sessionIncome: 200, weeklyIncome: 4100, monthlyIncome: 13000 },
+  ],
   '/exams': [
     { id: 'e1', name: 'امتحان شهر أكتوبر', groupId: 'g1', maxScore: 50, date: '2023-10-20', scores: {} },
     { id: 'e2', name: 'اختبار مفاجئ 1', groupId: 'g2', maxScore: 20, date: '2023-10-22', scores: {} },
@@ -52,7 +59,6 @@ export class ApiClient {
     if (!response.ok) {
       const cleanPath = path.split('?')[0];
       if (MOCK_DATA[cleanPath] || MOCK_DATA[path]) {
-        console.warn(`API: ${path} not found, returning MOCK.`);
         return MOCK_DATA[cleanPath] || MOCK_DATA[path];
       }
       
@@ -75,23 +81,12 @@ export class ApiClient {
       return this.handleResponse(response, path);
     } catch (e) {
       const cleanPath = path.split('?')[0];
-      if (cleanPath === '/students' && path.includes('groupId=')) {
-        const gid = path.split('groupId=')[1].split('&')[0];
-        return MOCK_DATA['/students'].filter((s: any) => s.groupId === gid) as T;
-      }
       if (MOCK_DATA[cleanPath] || MOCK_DATA[path]) return MOCK_DATA[cleanPath] || MOCK_DATA[path];
-      if (cleanPath === '/attendance') return [] as any;
       throw e;
     }
   }
 
   static async post<T>(path: string, data: any): Promise<T> {
-    if (path === '/auth/login') {
-      if (data.username === 'admin' && data.password === '123') {
-        return { user: MOCK_DATA['/auth/me'], token: 'mock-token' } as any;
-      } else throw new Error('بيانات الدخول غير صحيحة');
-    }
-
     try {
       const response = await fetch(`${BASE_URL}${path}`, {
         method: 'POST',
@@ -100,16 +95,6 @@ export class ApiClient {
       });
       return this.handleResponse(response, path);
     } catch (e) {
-      console.log(`Mock POST to ${path}`);
-      
-      if (path === '/students') {
-        const id = 's' + Math.random().toString(36).substr(2, 9);
-        const qrCode = 'STU-' + Math.floor(1000 + Math.random() * 9000);
-        const newStudent = { id, qrCode, isPaid: false, attendanceCount: 0, ...data };
-        MOCK_DATA['/students'].push(newStudent);
-        return newStudent as T;
-      }
-      
       return { id: 'mock-' + Date.now(), ...data } as T;
     }
   }
@@ -123,14 +108,6 @@ export class ApiClient {
       });
       return this.handleResponse(response, path);
     } catch (e) {
-      if (path.startsWith('/students/')) {
-        const id = path.split('/').pop();
-        const index = MOCK_DATA['/students'].findIndex((s: any) => s.id === id);
-        if (index !== -1) {
-          MOCK_DATA['/students'][index] = { ...MOCK_DATA['/students'][index], ...data };
-          return MOCK_DATA['/students'][index] as T;
-        }
-      }
       return data as T;
     }
   }
@@ -143,10 +120,7 @@ export class ApiClient {
       });
       await this.handleResponse(response, path);
     } catch (e) {
-      if (path.startsWith('/students/')) {
-        const id = path.split('/').pop();
-        MOCK_DATA['/students'] = MOCK_DATA['/students'].filter((s: any) => s.id !== id);
-      }
+      console.log(`Mock DELETE to ${path}`);
     }
   }
 }
