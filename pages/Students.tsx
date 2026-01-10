@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ApiClient } from '../services/apiClient';
 import { Student, Group } from '../types';
 import QRDisplay from '../components/QRDisplay';
+import SearchBar from '../components/SearchBar';
 
 const Students: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -42,7 +43,6 @@ const Students: React.FC = () => {
       setShowModal(false);
       await fetchData();
       
-      // Automatic QR Flow for NEW students
       if (!form.id) {
         setShowQRModal(result);
       }
@@ -59,7 +59,10 @@ const Students: React.FC = () => {
     } catch (err: any) { alert(err.message); }
   };
 
-  const filtered = students.filter(s => s.name.includes(search) || s.phone.includes(search));
+  // Improved real-time search logic: By Phone Number ONLY
+  const filtered = useMemo(() => {
+    return students.filter(s => s.phone.includes(search));
+  }, [students, search]);
 
   return (
     <div className="space-y-6 md:space-y-10 animate-fadeIn pb-10 px-2 font-['Cairo']">
@@ -69,14 +72,12 @@ const Students: React.FC = () => {
           <p className="text-brand font-bold text-[10px] uppercase tracking-widest mt-1">قاعدة بيانات الطلاب المسجلين</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <input 
-              type="text" placeholder="بحث بالاسم أو رقم الهاتف..." 
-              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 pr-12 rounded-2xl md:rounded-3xl outline-none font-bold text-sm shadow-sm focus:border-brand"
-              value={search} onChange={e => setSearch(e.target.value)}
-            />
-            <i className="fa-solid fa-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          </div>
+          <SearchBar 
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث برقم هاتف الطالب..."
+            className="flex-1 md:w-80"
+          />
           <button onClick={() => { setForm({ name: '', phone: '', groupId: '' }); setShowModal(true); }} className="bg-brand text-black px-8 py-4 rounded-2xl md:rounded-3xl font-black shadow-lg hover:bg-black hover:text-brand transition-all flex items-center justify-center gap-3 text-sm">
             <i className="fa-solid fa-user-plus text-lg"></i> إضافة طالب جديد
           </button>
@@ -88,9 +89,9 @@ const Students: React.FC = () => {
           <table className="w-full text-right min-w-[700px]">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900/50 text-zinc-500 font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100 dark:border-zinc-800">
-                <th className="p-6 md:p-8">بيانات الطالب</th>
-                <th className="p-6 md:p-8">المجموعة</th>
-                <th className="p-6 md:p-8">رقم الموبايل</th>
+                <th className="p-6 md:p-8 text-right">بيانات الطالب</th>
+                <th className="p-6 md:p-8 text-right">المجموعة</th>
+                <th className="p-6 md:p-8 text-right">رقم الموبايل</th>
                 <th className="p-6 md:p-8 text-center">QR Code</th>
                 <th className="p-6 md:p-8 text-center">إجراءات</th>
               </tr>
@@ -100,7 +101,7 @@ const Students: React.FC = () => {
                 <tr><td colSpan={5} className="p-20 text-center"><i className="fa-solid fa-spinner animate-spin text-brand text-2xl"></i></td></tr>
               ) : filtered.map(s => (
                 <tr key={s.id} className="hover:bg-brand/5 transition-all group">
-                  <td className="p-6 md:p-8">
+                  <td className="p-6 md:p-8 text-right">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-brand font-black text-xl">
                         {s.name[0]}
@@ -111,7 +112,7 @@ const Students: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="p-6 md:p-8">
+                  <td className="p-6 md:p-8 text-right">
                     <div className="flex flex-col">
                       <span className="text-zinc-800 dark:text-zinc-300 font-black text-sm truncate max-w-[150px]">
                         {groups.find(g => g.id === s.groupId)?.name || 'غير محدد'}
@@ -119,7 +120,7 @@ const Students: React.FC = () => {
                       <span className="text-[9px] text-brand font-bold uppercase tracking-widest">Active Group</span>
                     </div>
                   </td>
-                  <td className="p-6 md:p-8 text-zinc-500 font-mono font-bold text-sm">{s.phone}</td>
+                  <td className="p-6 md:p-8 text-zinc-500 font-mono font-bold text-sm text-right">{s.phone}</td>
                   <td className="p-6 md:p-8 text-center">
                     <button 
                       onClick={() => setShowQRModal(s)}
@@ -129,9 +130,14 @@ const Students: React.FC = () => {
                     </button>
                   </td>
                   <td className="p-6 md:p-8 text-center">
-                    <div className="flex justify-center gap-3 opacity-100 md:opacity-20 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => { setForm(s); setShowModal(true); }} className="w-10 h-10 bg-gray-100 dark:bg-zinc-800 rounded-xl hover:text-brand transition-all"><i className="fa-solid fa-pen text-xs"></i></button>
-                      <button onClick={() => del(s.id)} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-trash text-xs"></i></button>
+                    {/* Actions are ALWAYS visible now */}
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => { setForm(s); setShowModal(true); }} className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white rounded-xl hover:text-brand transition-all border border-transparent hover:border-brand/30">
+                        <i className="fa-solid fa-pen text-xs"></i>
+                      </button>
+                      <button onClick={() => del(s.id)} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all border border-transparent hover:border-red-200">
+                        <i className="fa-solid fa-trash text-xs"></i>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -144,7 +150,6 @@ const Students: React.FC = () => {
         </div>
       </div>
 
-      {/* Registration Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <form onSubmit={save} className="bg-white dark:bg-zinc-950 w-full max-w-lg rounded-[40px] p-10 md:p-14 space-y-6 animate-scaleIn shadow-2xl border border-white/5 overflow-y-auto max-h-[95vh]">
@@ -156,15 +161,15 @@ const Students: React.FC = () => {
             <div className="space-y-5">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] px-2">Student Name</label>
-                <input type="text" placeholder="الاسم الرباعي للطالب" required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black text-sm outline-none border border-transparent focus:border-brand transition-all" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                <input type="text" placeholder="الاسم الرباعي للطالب" required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black text-sm outline-none border border-transparent focus:border-brand transition-all text-black dark:text-white" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] px-2">Mobile Number</label>
-                <input type="tel" placeholder="01xxxxxxxxx" required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black text-sm outline-none border border-transparent focus:border-brand text-center font-mono" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                <input type="tel" placeholder="01xxxxxxxxx" required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black text-sm outline-none border border-transparent focus:border-brand text-center font-mono text-black dark:text-white" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] px-2">Target Group</label>
-                <select required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black outline-none border border-transparent focus:border-brand text-sm" value={form.groupId} onChange={e => setForm({...form, groupId: e.target.value})}>
+                <select required className="w-full bg-zinc-50 dark:bg-zinc-900 p-5 rounded-2xl font-black outline-none border border-transparent focus:border-brand text-sm text-black dark:text-white" value={form.groupId} onChange={e => setForm({...form, groupId: e.target.value})}>
                   <option value="">اختر المجموعة...</option>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
@@ -179,7 +184,6 @@ const Students: React.FC = () => {
         </div>
       )}
 
-      {/* QR Viewer / Post-Registration Success Modal */}
       {showQRModal && (
         <div className="fixed inset-0 bg-black/98 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className="w-full max-w-sm">

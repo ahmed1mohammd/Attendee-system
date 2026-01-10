@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiClient } from '../services/apiClient';
 import { Group } from '../types';
+import SearchBar from '../components/SearchBar';
 
 const Groups: React.FC = () => {
   const navigate = useNavigate();
@@ -42,21 +43,22 @@ const Groups: React.FC = () => {
     } catch (err: any) { alert(err.message); }
   };
 
-  const filtered = groups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
+  // Search by Group Name ONLY
+  const filtered = useMemo(() => {
+    return groups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
+  }, [groups, search]);
 
   return (
     <div className="space-y-6 md:space-y-10 animate-fadeIn pb-10">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-2">
         <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white">المجموعات الدراسية</h2>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <input 
-              type="text" placeholder="بحث عن مجموعة..." 
-              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-4 pr-12 rounded-2xl md:rounded-3xl outline-none font-bold text-sm shadow-sm"
-              value={search} onChange={e => setSearch(e.target.value)}
-            />
-            <i className="fa-solid fa-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          </div>
+          <SearchBar 
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم المجموعة..."
+            className="flex-1 md:w-80"
+          />
           <button onClick={() => { setForm({ name: '', price: 0, time: '', days: [] }); setShowModal(true); }} className="w-full sm:w-auto bg-brand text-black px-6 md:px-8 py-3 md:py-4 rounded-2xl md:rounded-3xl font-black shadow-lg shadow-brand/10 hover:bg-black hover:text-brand transition-all flex items-center justify-center gap-2 text-sm md:text-base">
             <i className="fa-solid fa-plus"></i> إضافة مجموعة
           </button>
@@ -73,8 +75,9 @@ const Groups: React.FC = () => {
                 <div className="w-12 h-12 md:w-16 md:h-16 bg-gray-50 dark:bg-zinc-900 rounded-2xl md:rounded-3xl flex items-center justify-center text-brand text-2xl md:text-3xl shadow-inner">
                   <i className="fa-solid fa-users-rectangle"></i>
                 </div>
-                <div className="flex gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => { setForm(g); setShowModal(true); }} className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 dark:bg-zinc-800 rounded-xl hover:text-brand transition-colors"><i className="fa-solid fa-edit text-xs"></i></button>
+                {/* Actions always visible */}
+                <div className="flex gap-2">
+                  <button onClick={() => { setForm(g); setShowModal(true); }} className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 dark:bg-zinc-800 text-black dark:text-white rounded-xl hover:text-brand transition-colors"><i className="fa-solid fa-edit text-xs"></i></button>
                   <button onClick={() => del(g.id)} className="w-8 h-8 md:w-10 md:h-10 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-colors"><i className="fa-solid fa-trash text-xs"></i></button>
                 </div>
               </div>
@@ -108,19 +111,19 @@ const Groups: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">اسم المجموعة</label>
-                <input type="text" placeholder="أدخل الاسم" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                <input type="text" placeholder="أدخل الاسم" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-black dark:text-white" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">سعر الحصة (بالجنيه)</label>
-                <input type="number" placeholder="0" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} />
+                <input type="number" placeholder="0" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-black dark:text-white" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">الأيام (مثال: الأحد - الثلاثاء)</label>
-                <input type="text" placeholder="الأحد - الثلاثاء" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-center" value={form.days?.join(' - ')} onChange={e => setForm({...form, days: e.target.value.split(' - ')})} />
+                <input type="text" placeholder="الأحد - الثلاثاء" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-center text-black dark:text-white" value={form.days?.join(' - ')} onChange={e => setForm({...form, days: e.target.value.split(' - ')})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">الوقت (مثال: 04:00 م)</label>
-                <input type="text" placeholder="04:00 م" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-center" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
+                <input type="text" placeholder="04:00 م" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 md:p-5 rounded-2xl font-bold text-sm outline-none focus:border-brand border border-transparent text-center text-black dark:text-white" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 pt-6">

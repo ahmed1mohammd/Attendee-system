@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ApiClient } from '../services/apiClient';
 import { Transaction, GroupFinanceSummary } from '../types';
+import SearchBar from '../components/SearchBar';
 
 const Payments: React.FC = () => {
   const [payments, setPayments] = useState<Transaction[]>([]);
@@ -11,7 +12,6 @@ const Payments: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'day' | 'week' | 'month'>('all');
   
-  // State for group drill-down
   const [selectedGroup, setSelectedGroup] = useState<GroupFinanceSummary | null>(null);
 
   const fetchPaymentsData = async () => {
@@ -32,22 +32,23 @@ const Payments: React.FC = () => {
 
   useEffect(() => { fetchPaymentsData(); }, []);
 
-  // Filter groups by search query
+  // Filter groups by Group Name ONLY
   const filteredGroups = useMemo(() => {
     return groupSummaries.filter(g => 
       g.groupName.toLowerCase().includes(search.toLowerCase())
     );
   }, [groupSummaries, search]);
 
-  // Filter transactions for specific group if one is selected
   const groupSpecificTransactions = useMemo(() => {
     if (!selectedGroup) return [];
     return payments.filter(p => p.groupId === selectedGroup.groupId);
   }, [selectedGroup, payments]);
 
-  // Filter individual transactions by search and time filter for general list
   const filteredTransactions = useMemo(() => {
-    let list = payments.filter(p => p.studentName.includes(search) || p.groupName.includes(search));
+    let list = payments.filter(p => 
+      p.studentName.toLowerCase().includes(search.toLowerCase()) || 
+      p.groupName.toLowerCase().includes(search.toLowerCase())
+    );
     
     const now = new Date();
     if (filterType === 'day') {
@@ -62,7 +63,6 @@ const Payments: React.FC = () => {
       
       {!selectedGroup ? (
         <>
-          {/* 1. Finance Overview - Hero Stats (Huge Numbers) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="card p-10 rounded-[56px] bg-main text-white border-0 shadow-2xl relative overflow-hidden group">
               <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand/10 rounded-full blur-3xl transition-transform group-hover:scale-150"></div>
@@ -92,21 +92,18 @@ const Payments: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Group Income Analysis Cards */}
           <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-end gap-6 px-4">
               <div className="space-y-1">
                 <h4 className="text-3xl font-black text-black dark:text-white italic tracking-tighter uppercase">Groups Performance</h4>
                 <p className="text-brand font-bold text-xs uppercase tracking-widest">تحليل الدخل التفصيلي لكل مجموعة</p>
               </div>
-              <div className="relative w-full md:w-96">
-                <input 
-                  type="text" placeholder="بحث باسم المجموعة..." 
-                  className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-5 pr-14 rounded-3xl outline-none font-bold text-sm shadow-xl focus:border-brand transition-all"
-                  value={search} onChange={e => setSearch(e.target.value)}
-                />
-                <i className="fa-solid fa-search absolute right-6 top-1/2 -translate-y-1/2 text-gray-400"></i>
-              </div>
+              <SearchBar 
+                value={search}
+                onChange={setSearch}
+                placeholder="ابحث باسم المجموعة..."
+                className="w-full md:w-96"
+              />
             </div>
 
             {loading ? (
@@ -168,7 +165,6 @@ const Payments: React.FC = () => {
           </div>
         </>
       ) : (
-        /* Group Detail Drill-down View */
         <div className="space-y-10 animate-scaleIn">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 border-b border-gray-100 dark:border-zinc-900 pb-10 px-4">
             <div className="flex items-center gap-6">
@@ -221,7 +217,7 @@ const Payments: React.FC = () => {
                                  <p className="font-black text-black dark:text-white text-lg tracking-tight">{t.studentName}</p>
                               </div>
                            </td>
-                           <td className="p-10 text-zinc-500 font-mono font-bold text-sm">--01xxxxxxxxx--</td>
+                           <td className="p-10 text-zinc-500 font-mono font-bold text-sm text-right">--01xxxxxxxxx--</td>
                            <td className="p-10 text-zinc-400 font-mono text-sm italic">{t.date}</td>
                            <td className="p-10 text-center">
                               <span className="font-black text-brand text-3xl tracking-tighter">+{t.amount}</span>
@@ -238,7 +234,6 @@ const Payments: React.FC = () => {
         </div>
       )}
 
-      {/* 3. General Detailed Transactions Table - Only shown in summary view */}
       {!selectedGroup && (
         <div className="card overflow-hidden rounded-[64px] border-gray-100 dark:border-zinc-900 bg-white dark:bg-black shadow-2xl">
           <div className="p-10 md:p-14 border-b border-gray-50 dark:border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-8">
@@ -269,9 +264,9 @@ const Payments: React.FC = () => {
             <table className="w-full text-right min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 dark:bg-zinc-900/30 text-zinc-400 font-black text-[10px] uppercase tracking-[0.2em] border-b border-gray-100 dark:border-zinc-900">
-                  <th className="p-10">بيانات الطالب</th>
-                  <th className="p-10">المجموعة</th>
-                  <th className="p-10">التاريخ والوقت</th>
+                  <th className="p-10 text-right">بيانات الطالب</th>
+                  <th className="p-10 text-right">المجموعة</th>
+                  <th className="p-10 text-right">التاريخ والوقت</th>
                   <th className="p-10 text-center">المبلغ المستلم</th>
                 </tr>
               </thead>
@@ -280,7 +275,7 @@ const Payments: React.FC = () => {
                   <tr><td colSpan={4} className="p-20 text-center"><i className="fa-solid fa-spinner animate-spin text-brand text-3xl"></i></td></tr>
                 ) : filteredTransactions.map(t => (
                   <tr key={t.id} className="hover:bg-brand/[0.02] group transition-all">
-                    <td className="p-10">
+                    <td className="p-10 text-right">
                       <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-brand font-black text-xl border border-gray-100 dark:border-zinc-800 group-hover:bg-brand group-hover:text-black transition-all">
                           {t.studentName[0]}
@@ -291,12 +286,12 @@ const Payments: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="p-10">
+                    <td className="p-10 text-right">
                       <span className="text-xs font-black uppercase tracking-widest text-zinc-600 bg-zinc-100 dark:bg-zinc-900 px-4 py-2 rounded-xl border border-transparent group-hover:border-zinc-200 dark:group-hover:border-zinc-800 transition-all">
                         {t.groupName}
                       </span>
                     </td>
-                    <td className="p-10">
+                    <td className="p-10 text-right">
                       <div className="flex flex-col">
                         <span className="text-zinc-500 font-mono text-sm font-black italic">{t.date}</span>
                         <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Auto Generated Time</span>
@@ -308,7 +303,7 @@ const Payments: React.FC = () => {
                           <span className="font-black text-brand text-3xl tracking-tighter">+{t.amount}</span>
                           <span className="text-xs font-bold text-zinc-400 italic">EGP</span>
                         </div>
-                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest leading-none mt-1">Paid via QR/Manual</span>
+                        <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest leading-none mt-1 text-right">Paid via QR/Manual</span>
                       </div>
                     </td>
                   </tr>

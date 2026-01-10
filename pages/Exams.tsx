@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ApiClient } from '../services/apiClient';
 import { Exam, Group, Student } from '../types';
+import SearchBar from '../components/SearchBar';
 
 const Exams: React.FC = () => {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -35,7 +36,10 @@ const Exams: React.FC = () => {
     fetchData();
   }, []);
 
-  const filtered = exams.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  // Search by Exam Name ONLY
+  const filtered = useMemo(() => {
+    return exams.filter(e => e.name.toLowerCase().includes(search.toLowerCase()));
+  }, [exams, search]);
 
   const saveExam = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,14 +104,14 @@ const Exams: React.FC = () => {
           <table className="w-full text-right min-w-[300px]">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-900/50 text-gray-400 font-black text-[10px] uppercase tracking-widest border-b border-gray-100 dark:border-zinc-900">
-                <th className="p-6">اسم الطالب</th>
+                <th className="p-6 text-right">اسم الطالب</th>
                 <th className="p-6 text-center">الدرجة المستحقة</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-zinc-900">
               {groupStudents.map(s => (
                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/20">
-                  <td className="p-6 font-bold text-black dark:text-white">{s.name}</td>
+                  <td className="p-6 font-bold text-black dark:text-white text-right">{s.name}</td>
                   <td className="p-6 text-center">
                     <input 
                       type="number" 
@@ -133,14 +137,12 @@ const Exams: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 px-2">
         <h2 className="text-2xl md:text-3xl font-black text-black dark:text-white">الامتحانات</h2>
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-             <input 
-              type="text" placeholder="بحث..." 
-              className="w-full bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 p-3 pr-10 rounded-xl outline-none text-xs font-bold shadow-sm"
-              value={search} onChange={e => setSearch(e.target.value)}
-             />
-             <i className="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          </div>
+          <SearchBar 
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم الامتحان..."
+            className="flex-1 md:w-64"
+          />
           <button 
             onClick={() => { setExamForm({ name: '', groupId: '', maxScore: 50, date: new Date().toISOString().split('T')[0] }); setShowModal(true); }} 
             className="w-full sm:w-auto bg-main dark:bg-brand text-white dark:text-black px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg shadow-brand/10 transition-transform active:scale-95"
@@ -155,13 +157,14 @@ const Exams: React.FC = () => {
           <div key={ex.id} className="card p-6 md:p-8 rounded-[32px] border-gray-100 dark:border-zinc-900 shadow-sm relative overflow-hidden group bg-white dark:bg-black">
             <div className="flex justify-between items-start mb-6">
               <span className="bg-brand/10 text-brand px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">EXAM LOG</span>
-              <div className="flex gap-2 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => { setExamForm(ex); setShowModal(true); }} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-black dark:text-white hover:text-brand"><i className="fa-solid fa-edit text-xs"></i></button>
-                <button onClick={() => del(ex.id)} className="w-8 h-8 bg-red-50 dark:bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500 hover:text-white"><i className="fa-solid fa-trash text-xs"></i></button>
+              {/* Actions always visible */}
+              <div className="flex gap-2">
+                <button onClick={() => { setExamForm(ex); setShowModal(true); }} className="w-8 h-8 bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white rounded-lg hover:text-brand transition-all"><i className="fa-solid fa-edit text-xs"></i></button>
+                <button onClick={() => del(ex.id)} className="w-8 h-8 bg-red-50 dark:bg-red-500/10 rounded-lg text-red-500 hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-trash text-xs"></i></button>
               </div>
             </div>
-            <h3 className="text-xl md:text-2xl font-black text-black dark:text-white mb-2 truncate">{ex.name}</h3>
-            <p className="text-gray-400 font-bold text-[10px] uppercase truncate">المجموعة: {groups.find(g => g.id === ex.groupId)?.name || 'غير معروفة'}</p>
+            <h3 className="text-xl md:text-2xl font-black text-black dark:text-white mb-2 truncate text-right">{ex.name}</h3>
+            <p className="text-gray-400 font-bold text-[10px] uppercase truncate text-right">المجموعة: {groups.find(g => g.id === ex.groupId)?.name || 'غير معروفة'}</p>
             <div className="mt-8 flex items-center justify-between">
               <div className="text-center bg-gray-50 dark:bg-zinc-900 px-4 md:px-6 py-2 md:py-3 rounded-2xl border border-gray-100 dark:border-zinc-800">
                 <p className="text-xl md:text-2xl font-black text-brand tracking-tighter">{ex.maxScore}</p>
@@ -183,22 +186,22 @@ const Exams: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">اسم الامتحان</label>
-                <input type="text" placeholder="مثلاً: اختبار أكتوبر" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.name} onChange={e => setExamForm({...examForm, name: e.target.value})} />
+                <input type="text" placeholder="مثلاً: اختبار أكتوبر" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent text-black dark:text-white" value={examForm.name} onChange={e => setExamForm({...examForm, name: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">المجموعة المستهدفة</label>
-                <select className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.groupId} onChange={e => setExamForm({...examForm, groupId: e.target.value})}>
+                <select className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent text-black dark:text-white" value={examForm.groupId} onChange={e => setExamForm({...examForm, groupId: e.target.value})}>
                   <option value="">اختر المجموعة...</option>
                   {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">الدرجة النهائية</label>
-                <input type="number" placeholder="50" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.maxScore} onChange={e => setExamForm({...examForm, maxScore: Number(e.target.value)})} />
+                <input type="number" placeholder="50" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent text-black dark:text-white" value={examForm.maxScore} onChange={e => setExamForm({...examForm, maxScore: Number(e.target.value)})} />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">تاريخ الامتحان</label>
-                <input type="date" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent" value={examForm.date} onChange={e => setExamForm({...examForm, date: e.target.value})} />
+                <input type="date" required className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none font-bold text-sm focus:border-brand border border-transparent text-black dark:text-white" value={examForm.date} onChange={e => setExamForm({...examForm, date: e.target.value})} />
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 pt-6">
